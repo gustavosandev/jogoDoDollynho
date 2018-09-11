@@ -1,0 +1,251 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>CATE A PINGA FRACAÇADU</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <style type="text/css">
+        body 
+        {
+            margin: 0;
+        }
+        .container
+        {
+           width: 100vw;
+04         height: 100vh;
+05         background: #6C7A89;
+06         display: flex;
+07         flex-direction: row;
+08         justify-content: center;
+09         align-items: center
+        }
+        #sessao 
+        {
+            font: bold 15px Arial;
+            padding: 5px;
+            color: #000;
+            border: solid 2px #000;
+            width: 56%;
+            position: relative;
+            background-color: lightgreen;
+       }
+    </style>
+</head>
+<body>
+<div class="container">
+<script type="text/javascript">
+
+var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+
+    game.load.image('sky', 'assets/sky.png');
+    game.load.image('ground', 'assets/platform.png');
+    game.load.image('star', 'assets/star.png');
+    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+
+}
+
+var player;
+var platforms;
+var cursors;
+
+var stars;
+var score = 0;
+var scoreText;
+
+function create() {
+
+    // Aqui usamos efeitos físicos do módulo Arcade
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+
+    // Um fundo simples para o nosso jogo
+    game.add.sprite(0, 0, 'sky');
+
+    // É agrupado o chão e as 2 plataformas onde o jogador poderá saltar
+    platforms = game.add.group();
+
+    // Permitir efeito físico para qualquer objeto
+    platforms.enableBody = true;
+
+    // Aqui criamos o chão
+    var ground = platforms.create(0, game.world.height - 64, 'ground');
+
+    // Escala da largura do jogo (o sprite original está em 400x32)
+    ground.scale.setTo(2, 2);
+
+    // Para parar de cair quando o jogador saltar sobre a plataforma
+    ground.body.immovable = true;
+
+    // Agora vamos criar duas bordas
+    var ledge = platforms.create(400, 400, 'ground');
+    ledge.body.immovable = true;
+
+    ledge = platforms.create(-150, 250, 'ground');
+    ledge.body.immovable = true;
+
+    // O jogador e suas configurações.
+    player = game.add.sprite(32, game.world.height - 150, 'dude');
+
+    // Habilitar efeitos físicos para o jogador.
+    game.physics.arcade.enable(player);
+
+    // Propriedades físicas para o jogador, permitindo o efeito de salto.
+    player.body.bounce.y = 0.2;
+    player.body.gravity.y = 300; //original é 300
+    player.body.collideWorldBounds = true;
+
+    // Nossas duas animações, andando para a esquerda e direita.
+    player.animations.add('left', [0, 1, 2, 3], 10, true);
+    player.animations.add('right', [5, 6, 7, 8], 10, true);
+
+    // Finalmente, algumas estrelas para coletar.
+    stars = game.add.group();
+
+    // Permitirá efeitos físicos para toda a estrela que é criado neste grupo.
+    stars.enableBody = true;
+
+    // Aqui vamos criar 12 estrelas uniformemente espaçadas.
+    for (var i = 0; i < 12; i++)
+    {
+        // Criar uma estrela dentro do grupo de "estrelas".
+        var star = stars.create(i * 70, 0, 'star');
+
+        // Deixar a gravidade fazer a sua parte.
+        star.body.gravity.y = 300;
+
+        // Permitir para cada estrela dar um pequeno salto aleatório.
+        star.body.bounce.y = 0.7 + Math.random() * 0.2;
+    }
+
+    // A pontuação
+    scoreText = game.add.text(16, 16, 'Pontos: 0', { fontSize: '42px', fill: '#000' });
+
+    // Controle das teclas
+    cursors = game.input.keyboard.createCursorKeys();
+    
+}
+
+function update() {
+
+    // Efeito físico de colidir o jogador e as estrelas com as plataformas
+    game.physics.arcade.collide(player, platforms);
+    game.physics.arcade.collide(stars, platforms);
+
+    // Verifica se o jogador colidir com qualquer das estrelas, se ele chamar a função collectStar
+    game.physics.arcade.overlap(player, stars, collectStar, null, this);
+
+    // Resetar a velocidade do jogador
+    player.body.velocity.x = 0;
+
+    if (cursors.left.isDown)
+    {
+        // Mover para a esquerda
+        player.body.velocity.x = -150;
+        player.animations.play('left');
+    }
+    else if (cursors.right.isDown)
+    {
+        // Mover para a direita
+        player.body.velocity.x = 150;
+        player.animations.play('right');
+    }
+    else
+    {
+        // Parar a animação.
+        player.animations.stop();
+
+        player.frame = 4;
+    }
+    
+    //  Permitir que o jogador salte se eles estiver tocando o chão.
+    if (cursors.up.isDown)  //&& player.body.touching.down
+    {
+        player.body.velocity.y = -350;  //original é 350
+    }
+
+}
+
+function collectStar (player, star) {
+    
+    // Remove a estrela da tela
+    star.kill();
+
+    // E atualiza a pontuação
+    score += 10;
+    scoreText.text = 'Pontos: ' + score;
+
+}
+
+
+
+<!--  CONTADOR DE TEMPO--------------------------------------- -->
+
+var tempo = new Number();
+// segundos
+tempo = 17;
+
+function startCountdown(){
+
+    // Se o tempo não for zerado
+    if((tempo - 1) >= 0){
+
+        // Pega a parte inteira dos minutos
+        var min = parseInt(tempo/60);
+       // Calcula os segundos restantes
+        var seg = tempo%60;
+
+        // Formata o número menor que dez, ex: 08, 07, ...
+        if(min < 10){
+            min = "0"+min;
+            min = min.substr(0, 2);
+        }
+        if(seg <=9){
+            seg = "0"+seg;
+        }
+
+        // Cria a variável para formatar no estilo hora/cronômetro
+        horaImprimivel = '00:' + min + ':' + (seg = seg - 2) + ' Pegueie a pinga rapidao |  Garça e çeus frakaçus 2017';
+
+        //JQuery pra setar o valor
+        $("#sessao").html(horaImprimivel);
+
+        // Define que a função será executada novamente em 1000ms = 1 segundo
+        setTimeout('startCountdown()',1000);
+
+        // diminui o tempo
+        tempo--;
+    } 
+    
+// Quando o contador chegar a zero faz esta ação
+    if(tempo == 0 && score < 120) {
+       recarregar();
+    }
+    if(score == 120 && tempo > 0)
+    {
+       ganhou();
+    }
+}
+
+// se a tela carregou, começa a funcao
+startCountdown();
+function ganhou()
+{
+    alert('vuçe vemçel na vida mongolaum !Mais como eh pobri tein soh eça fase ');
+    location.reload();
+}
+function recarregar()
+{
+   window.alert('vuçe naum cato a tempu vaçilaum');
+   location.reload();
+}
+</script>
+            <div id="sessao"></div>
+        </div>
+        <audio autoplay="autoplay" >
+        <source src="sound/dolly.mp3" type="audio/mp3" />
+        seu navegador não suporta HTML5
+        </audio>
+</body>
+</html>
